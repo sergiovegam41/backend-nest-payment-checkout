@@ -17,41 +17,22 @@ export class ProductService {
   async findAll(): Promise<Product[]> {
     return this.prisma.product.findMany({
       where: { isActive: true },
-      include: {
-        categories: {
-          include: {
-            category: true,
-          },
-        },
-      },
     });
   }
 
   async findOne(id: string): Promise<Product | null> {
     return this.prisma.product.findUnique({
       where: { id },
-      include: {
-        categories: {
-          include: {
-            category: true,
-          },
-        },
-      },
     });
   }
 
   async findBySku(sku: string): Promise<Product | null> {
     return this.prisma.product.findUnique({
       where: { sku },
-      include: {
-        categories: {
-          include: {
-            category: true,
-          },
-        },
-      },
     });
   }
+
+
 
   async update(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
     return this.prisma.product.update({
@@ -64,20 +45,6 @@ export class ProductService {
     return this.prisma.product.update({
       where: { id },
       data: { isActive: false },
-    });
-  }
-
-  async findWithPermissions(id: string): Promise<Product | null> {
-    // Método especializado para mostrar patrón similar al jwt-strategy
-    return this.prisma.product.findUnique({
-      where: { id },
-      include: {
-        categories: {
-          include: {
-            category: true,
-          },
-        },
-      },
     });
   }
 }
