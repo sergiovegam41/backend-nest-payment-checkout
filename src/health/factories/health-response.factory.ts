@@ -1,29 +1,34 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { HealthResponse } from '../interfaces/health-response.interface';
-import { HEALTH_STATUS, DATABASE_STATUS, DEFAULT_VALUES } from '../constants/health.constants';
+import { HealthStatus, DatabaseStatus } from '../enums';
 
 @Injectable()
 export class HealthResponseFactory {
+  constructor(private readonly configService: ConfigService) {}
   
-  createSuccessResponse(databaseStatus: typeof DATABASE_STATUS.CONNECTED | typeof DATABASE_STATUS.DISCONNECTED): HealthResponse {
-    return this.buildBaseResponse(HEALTH_STATUS.OK, databaseStatus);
+  createSuccessResponse(databaseStatus: DatabaseStatus): HealthResponse {
+    return this.buildBaseResponse(HealthStatus.OK, databaseStatus);
   }
 
-  createErrorResponse(error: string, databaseStatus: typeof DATABASE_STATUS.CONNECTED | typeof DATABASE_STATUS.DISCONNECTED = DATABASE_STATUS.DISCONNECTED): HealthResponse {
+  createErrorResponse(error: string, databaseStatus: DatabaseStatus = DatabaseStatus.DISCONNECTED): HealthResponse {
     return {
-      ...this.buildBaseResponse(HEALTH_STATUS.ERROR, databaseStatus),
+      ...this.buildBaseResponse(HealthStatus.ERROR, databaseStatus),
       error,
     };
   }
 
-  private buildBaseResponse(status: typeof HEALTH_STATUS.OK | typeof HEALTH_STATUS.ERROR, databaseStatus: typeof DATABASE_STATUS.CONNECTED | typeof DATABASE_STATUS.DISCONNECTED): HealthResponse {
+  private buildBaseResponse(status: HealthStatus, databaseStatus: DatabaseStatus): HealthResponse {
+    const nodeEnv = this.configService.get('NODE_ENV');
+    const url = this.configService.get('APP_URL');
+    
     return {
       status,
       timestamp: new Date().toISOString(),
       database: databaseStatus,
       uptime: process.uptime(),
-      environment: process.env.NODE_ENV || DEFAULT_VALUES.ENVIRONMENT,
-      url: process.env.APP_URL || DEFAULT_VALUES.APP_URL,
+      environment: nodeEnv,
+      url: url,
     };
   }
 }
