@@ -15,6 +15,8 @@ export class HealthService {
         timestamp: new Date().toISOString(),
         database: 'connected',
         uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development',
+        url: process.env.APP_URL || 'http://localhost:3000',
       };
     } catch (error) {
       return {
@@ -22,6 +24,8 @@ export class HealthService {
         timestamp: new Date().toISOString(),
         database: 'disconnected',
         uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development',
+        url: process.env.APP_URL || 'http://localhost:3000',
         error: error.message,
       };
     }
