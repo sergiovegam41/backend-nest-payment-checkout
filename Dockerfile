@@ -47,5 +47,5 @@ COPY --from=builder --chown=nestjs:nodejs /app/prisma ./prisma
 # Expose port
 EXPOSE 3000
 
-# Use dumb-init for proper signal handling
-CMD ["dumb-init", "node", "dist/main"]
+# Use dumb-init for proper signal handling and run migrations before starting
+CMD ["dumb-init", "sh", "-c", "npx prisma migrate deploy && node dist/main"]
