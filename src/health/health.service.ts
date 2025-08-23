@@ -1,45 +1,35 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { HealthResponse, DatabaseHealthResponse } from './interfaces/health-response.interface';
+import { HealthResponseFactory } from './factories/health-response.factory';
+import { DatabaseHealthStrategy } from './strategies/database-health.strategy';
+import { DATABASE_STATUS } from './constants/health.constants';
 
 @Injectable()
 export class HealthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly databaseHealthStrategy: DatabaseHealthStrategy,
+    private readonly healthResponseFactory: HealthResponseFactory,
+  ) {}
 
-  async checkHealth() {
-    try {
-      // Check database connection
-      await this.prisma.$queryRaw`SELECT 1`;
-      
-      return {
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        database: 'connected',
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || 'development',
-        url: process.env.APP_URL || 'http://localhost:3000',
-      };
-    } catch (error) {
-      return {
-        status: 'error',
-        timestamp: new Date().toISOString(),
-        database: 'disconnected',
-        uptime: process.uptime(),
-        environment: process.env.NODE_ENV || 'development',
-        url: process.env.APP_URL || 'http://localhost:3000',
-        error: error.message,
-      };
+  async checkHealth(): Promise<HealthResponse> {
+    const databaseCheck = await this.databaseHealthStrategy.check();
+    
+    if (databaseCheck.isHealthy) {
+      return this.healthResponseFactory.createSuccessResponse(DATABASE_STATUS.CONNECTED);
     }
+    
+    return this.healthResponseFactory.createErrorResponse(
+      databaseCheck.error || 'Unknown database error',
+      DATABASE_STATUS.DISCONNECTED
+    );
   }
 
-  async checkDatabase() {
-    try {
-      await this.prisma.$queryRaw`SELECT 1`;
-      return { status: 'connected' };
-    } catch (error) {
-      return { 
-        status: 'disconnected', 
-        error: error.message 
-      };
-    }
+  async checkDatabase(): Promise<DatabaseHealthResponse> {
+    const result = await this.databaseHealthStrategy.check();
+    
+    return {
+      status: result.isHealthy ? DATABASE_STATUS.CONNECTED : DATABASE_STATUS.DISCONNECTED,
+      error: result.error,
+    };
   }
 }
