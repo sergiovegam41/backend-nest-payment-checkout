@@ -1,15 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Product } from '@prisma/client';
+import { CursorPaginationQueryDto, CursorPaginatedResponse, CursorPaginationService } from '../common';
 
 @Injectable()
 export class ProductService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cursorPaginationService: CursorPaginationService
+  ) {}
 
 
-  async findAll(): Promise<Product[]> {
-    return this.prisma.product.findMany({
-      where: { isActive: true },
+  async findAll(query: CursorPaginationQueryDto): Promise<CursorPaginatedResponse<Product>> {
+    return this.cursorPaginationService.paginate<Product>({
+      model: this.prisma.product,
+      query,
+      baseWhere: { isActive: true },
+      orderBy: { createdAt: 'desc' }
     });
   }
 
