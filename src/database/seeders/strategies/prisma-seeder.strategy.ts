@@ -53,7 +53,7 @@ export class PrismaSeederStrategy implements ISeederStrategy {
   private getModelDelegate(model: string): any {
     const modelMap: Record<string, any> = {
       'product': this.prisma.product,
-      'productImage': this.prisma.productImage,
+      'productImage': (this.prisma as any).productImage,
       // Add more models as needed
     };
 
