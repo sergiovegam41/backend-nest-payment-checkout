@@ -11,19 +11,29 @@ export class ProductService {
   ) {}
 
 
-  async findAll(query: CursorPaginationQueryDto): Promise<CursorPaginatedResponse<Product>> {
-    return this.cursorPaginationService.paginate<Product>({
+  async findAll(query: CursorPaginationQueryDto): Promise<CursorPaginatedResponse<any>> {
+    return this.cursorPaginationService.paginate<any>({
       model: this.prisma.product,
       query,
       baseWhere: { isActive: true },
-      orderBy: { createdAt: 'desc' }
-    });
+      orderBy: { createdAt: 'desc' },
+      include: {
+        images: {
+          orderBy: { position: 'asc' }
+        }
+      }
+    } as any);
   }
 
-  async findOne(id: string): Promise<Product | null> {
+  async findOne(id: string): Promise<any> {
     return this.prisma.product.findUnique({
       where: { id },
-    });
+      include: {
+        images: {
+          orderBy: { position: 'asc' }
+        }
+      }
+    } as any);
   }
 
 }

@@ -1,5 +1,5 @@
-import { CursorPaginationQueryDto } from '../dto/cursor-pagination-query.dto';
-import { PrismaDelegate } from '../types/prisma-model.type';
+import { CursorPaginationQueryDto } from '../dto';
+import { PrismaDelegate } from '../types';
 
 export interface PaginatedQueryOptions<T = any> {
   model: PrismaDelegate;
