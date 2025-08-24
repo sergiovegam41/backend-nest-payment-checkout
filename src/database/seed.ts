@@ -25,7 +25,7 @@ async function main() {
     // Validate strategy
     if (!seedService.getAvailableStrategies().includes(strategy)) {
       console.error(`❌ Invalid strategy: ${strategy}`);
-      console.log(`Available strategies: ${seedService.getAvailableStrategies().join(', ')}`);
+      
       process.exit(1);
     }
 

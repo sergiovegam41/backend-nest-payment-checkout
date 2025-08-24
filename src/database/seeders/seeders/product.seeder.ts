@@ -12,7 +12,7 @@ export class ProductSeeder implements ISeeder {
   }
 
   async run(strategy: ISeederStrategy): Promise<void> {
-    console.log('🌱 Running Product Seeder...');
+    
 
     // Clean existing data
     await strategy.truncate('productImage');
@@ -32,9 +32,9 @@ export class ProductSeeder implements ISeeder {
 
     await strategy.create('productImage', allImages);
 
-    console.log('✅ Product seeding completed');
-    console.log(`   - ${createdProducts.length} products created`);
-    console.log(`   - ${allImages.length} images created`);
+    
+    
+    
   }
 
   getName(): string {

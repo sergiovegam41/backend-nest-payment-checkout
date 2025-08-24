@@ -17,10 +17,10 @@ export class JsonSeederStrategy implements ISeederStrategy {
       
       writeFileSync(filePath, JSON.stringify(data, null, 2));
       
-      console.log(`✅ Created ${data.length} records for ${model} in ${fileName}`);
+      
       return []; // JSON strategy doesn't return created records
     } catch (error) {
-      console.error(`❌ Error creating JSON for ${model}:`, error);
+      
       throw error;
     }
   }
@@ -32,15 +32,15 @@ export class JsonSeederStrategy implements ISeederStrategy {
       const filePath = join(this.outputDir, fileName);
       
       writeFileSync(filePath, JSON.stringify([], null, 2));
-      console.log(`🗑️  Truncated ${model} JSON file`);
+      
     } catch (error) {
-      console.error(`❌ Error truncating ${model} JSON:`, error);
+      
       throw error;
     }
   }
 
   async disconnect(): Promise<void> {
-    console.log('📁 JSON files saved to:', this.outputDir);
+    
   }
 
   private ensureOutputDir(): void {

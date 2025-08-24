@@ -23,7 +23,7 @@ export class PrismaSeederStrategy implements ISeederStrategy {
           const created = await modelDelegate.create({ data: item });
           createdRecords.push(created);
         }
-        console.log(`✅ Created ${createdRecords.length} records for ${model}`);
+        
         return createdRecords;
       } else {
         // Use createMany for other models
@@ -31,11 +31,11 @@ export class PrismaSeederStrategy implements ISeederStrategy {
           data,
           skipDuplicates: true
         });
-        console.log(`✅ Created ${data.length} records for ${model}`);
+        
         return [];
       }
     } catch (error) {
-      console.error(`❌ Error creating ${model}:`, error);
+      
       throw error;
     }
   }
@@ -49,16 +49,16 @@ export class PrismaSeederStrategy implements ISeederStrategy {
 
     try {
       await modelDelegate.deleteMany();
-      console.log(`🗑️  Truncated ${model} table`);
+      
     } catch (error) {
-      console.error(`❌ Error truncating ${model}:`, error);
+      
       throw error;
     }
   }
 
   async disconnect(): Promise<void> {
     await this.prisma.$disconnect();
-    console.log('🔌 Disconnected from database');
+    
   }
 
   private getModelDelegate(model: string): any {
