@@ -4,6 +4,7 @@ export interface CursorCondition {
   field: string;
   value: any;
   operator: 'lt' | 'gt' | 'lte' | 'gte';
+  isOrCondition?: boolean;
 }
 
 export interface CursorWhereClause {

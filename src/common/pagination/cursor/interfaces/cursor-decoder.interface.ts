@@ -5,5 +5,5 @@ export interface DecodedCursor {
 
 export interface ICursorDecoder {
   decode(cursor: string): DecodedCursor;
-  encode(id: string, additionalFields?: Record<string, any>): string;
+  encode(cursorData: Record<string, any>): string;
 }

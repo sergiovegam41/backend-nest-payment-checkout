@@ -10,7 +10,7 @@ export class JsonSeederStrategy implements ISeederStrategy {
     this.ensureOutputDir();
   }
 
-  async create<T>(model: string, data: T[]): Promise<void> {
+  async create<T>(model: string, data: T[]): Promise<any[]> {
     try {
       const fileName = `${model.toLowerCase()}.json`;
       const filePath = join(this.outputDir, fileName);
@@ -18,6 +18,7 @@ export class JsonSeederStrategy implements ISeederStrategy {
       writeFileSync(filePath, JSON.stringify(data, null, 2));
       
       console.log(`✅ Created ${data.length} records for ${model} in ${fileName}`);
+      return []; // JSON strategy doesn't return created records
     } catch (error) {
       console.error(`❌ Error creating JSON for ${model}:`, error);
       throw error;

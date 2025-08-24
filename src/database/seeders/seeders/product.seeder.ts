@@ -18,23 +18,22 @@ export class ProductSeeder implements ISeeder {
     await strategy.truncate('productImage');
     await strategy.truncate('product');
 
-    // Generate products
-    const products = this.generateProducts(20); // Create 20 products
-    await strategy.create('product', products);
+    // Generate and create products individually to get their IDs
+    const productData = this.generateProducts(20);
+    const createdProducts = await strategy.create('product', productData);
 
-    // Generate images for each product
+    // Generate images for each created product
     const allImages: ProductImageData[] = [];
     
-    for (const product of products) {
-      // Use factory's built-in random count logic (2-5 images)
-      const images = this.imageFactory.createForProduct(product.id!);
+    for (const product of createdProducts) {
+      const images = this.imageFactory.createForProduct(product.id);
       allImages.push(...images);
     }
 
     await strategy.create('productImage', allImages);
 
     console.log('✅ Product seeding completed');
-    console.log(`   - ${products.length} products created`);
+    console.log(`   - ${createdProducts.length} products created`);
     console.log(`   - ${allImages.length} images created`);
   }
 
@@ -46,10 +45,7 @@ export class ProductSeeder implements ISeeder {
     const products: ProductData[] = [];
 
     for (let i = 0; i < count; i++) {
-      const product = this.productFactory.create({
-        id: `prod_${Date.now()}_${i}` // Simple ID for demo
-      });
-      
+      const product = this.productFactory.create();
       products.push(product);
     }
 

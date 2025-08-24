@@ -1,5 +1,5 @@
 export interface ISeederStrategy {
-  create<T>(model: string, data: T[]): Promise<void>;
+  create<T>(model: string, data: T[]): Promise<any[]>;
   truncate(model: string): Promise<void>;
   disconnect(): Promise<void>;
 }

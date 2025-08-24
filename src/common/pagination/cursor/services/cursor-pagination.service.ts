@@ -15,33 +15,29 @@ export class CursorPaginationService {
   async paginate<T extends PrismaModel>(
     options: PaginatedQueryOptions<T>
   ): Promise<CursorPaginatedResponse<T>> {
-    
     const { model, query, baseWhere = {}, orderBy = { createdAt: 'desc' }, select, include } = options;
     const { take = 10, direction = 'forward' } = query;
-
-    // 1. Build where clause using strategy
-    const whereClause = await this.cursorBuilder.buildWhereClause(query, baseWhere, orderBy);
     
-    // 2. Build order clause using strategy
+    const whereClause = await this.cursorBuilder.buildWhereClause(query, baseWhere, orderBy);
     const finalOrderBy = this.cursorBuilder.buildOrderClause(orderBy, direction);
 
-    // 3. Execute query using strategy
-    const results = await this.queryExecutor.execute<T>({
+    const rawResults = await this.queryExecutor.execute<T>({
       model,
       whereClause,
       orderBy: finalOrderBy,
-      take,
+      take: take + 1,
       select,
       include
     });
 
-    // 4. Handle backward direction
-    if (direction === 'backward') {
-      results.reverse();
-    }
 
-    // 5. Create response using factory
+    const processedResults = this.processResultsForDirection(rawResults, direction);
     const orderFields = Object.keys(orderBy);
-    return this.queryFactory.createPaginatedResponse(results, take, direction, orderFields);
+    
+    return this.queryFactory.createPaginatedResponse(processedResults, take, direction, orderFields);
   }
-}
+
+  private processResultsForDirection<T>(results: T[], direction: 'forward' | 'backward'): T[] {
+    return direction === 'backward' ? results.reverse() : results;
+  }
+} 

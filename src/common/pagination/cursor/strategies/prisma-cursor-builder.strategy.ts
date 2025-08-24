@@ -5,6 +5,9 @@ import { CursorPaginationQueryDto } from '../dto';
 
 @Injectable()
 export class PrismaCursorBuilderStrategy implements ICursorBuilder {
+  private static readonly DEFAULT_ORDER_FIELD = 'createdAt';
+  private static readonly DEFAULT_ORDER_DIRECTION = 'desc';
+
   constructor(
     @Inject('ICursorDecoder') private readonly cursorDecoder: ICursorDecoder,
     @Inject('IQueryExecutor') private readonly queryExecutor: IQueryExecutor
@@ -25,13 +28,13 @@ export class PrismaCursorBuilderStrategy implements ICursorBuilder {
 
     const decodedCursor = this.cursorDecoder.decode(query.cursor);
     const orderFields = Object.keys(orderBy);
+    const direction = query.direction || 'forward';
     
-    whereClause.excludeId = decodedCursor.id;
-    whereClause.cursorConditions = await this.buildCursorConditions(
+    whereClause.cursorConditions = this.buildCursorConditions(
       decodedCursor,
       orderBy,
       orderFields,
-      query.direction || 'forward'
+      direction
     );
 
     return whereClause;
@@ -45,8 +48,33 @@ export class PrismaCursorBuilderStrategy implements ICursorBuilder {
       return { ...orderBy };
     }
 
-    // Reverse order for backward pagination
+    return this.reverseOrderDirection(orderBy);
+  }
+
+  private buildCursorConditions(
+    decodedCursor: any,
+    orderBy: Record<string, 'asc' | 'desc'>,
+    orderFields: string[],
+    direction: 'forward' | 'backward'
+  ): CursorCondition[] {
+    const primaryOrderField = this.getPrimaryOrderField(orderFields);
+    const primaryDirection = orderBy[primaryOrderField] || PrismaCursorBuilderStrategy.DEFAULT_ORDER_DIRECTION;
+    
+    if (!decodedCursor[primaryOrderField]) {
+      return [];
+    }
+
+    return this.createCursorConditions(
+      decodedCursor,
+      primaryOrderField,
+      primaryDirection,
+      direction
+    );
+  }
+
+  private reverseOrderDirection(orderBy: Record<string, 'asc' | 'desc'>): Record<string, 'asc' | 'desc'> {
     const reversed: Record<string, 'asc' | 'desc'> = {};
+    
     Object.entries(orderBy).forEach(([field, dir]) => {
       reversed[field] = dir === 'asc' ? 'desc' : 'asc';
     });
@@ -54,39 +82,51 @@ export class PrismaCursorBuilderStrategy implements ICursorBuilder {
     return reversed;
   }
 
-  private async buildCursorConditions(
+  private getPrimaryOrderField(orderFields: string[]): string {
+    return orderFields[0] || PrismaCursorBuilderStrategy.DEFAULT_ORDER_FIELD;
+  }
+
+  private createCursorConditions(
     decodedCursor: any,
-    orderBy: Record<string, 'asc' | 'desc'>,
-    orderFields: string[],
-    direction: 'forward' | 'backward'
-  ): Promise<CursorCondition[]> {
-    const conditions: CursorCondition[] = [];
+    primaryOrderField: string,
+    primaryDirection: 'asc' | 'desc',
+    paginationDirection: 'forward' | 'backward'
+  ): CursorCondition[] {
+    const timestampOperator = this.getOperatorForField(primaryDirection, paginationDirection);
+    const idOperator = this.getIdOperator(primaryDirection, paginationDirection);
 
-    for (const field of orderFields) {
-      const orderDirection = orderBy[field];
-      const fieldValue = decodedCursor[field];
-      
-      if (fieldValue !== undefined) {
-        const operator = this.getOperatorForField(orderDirection, direction);
-        conditions.push({
-          field,
-          value: fieldValue,
-          operator
-        });
+    return [
+      {
+        field: primaryOrderField,
+        value: decodedCursor[primaryOrderField],
+        operator: timestampOperator
+      },
+      {
+        field: 'id',
+        value: decodedCursor.id,
+        operator: idOperator,
+        isOrCondition: true
       }
-    }
-
-    return conditions;
+    ];
   }
 
   private getOperatorForField(
     orderDirection: 'asc' | 'desc',
     paginationDirection: 'forward' | 'backward'
-  ): 'lt' | 'gt' | 'lte' | 'gte' {
-    if (paginationDirection === 'forward') {
-      return orderDirection === 'desc' ? 'lt' : 'gt';
-    } else {
-      return orderDirection === 'desc' ? 'gt' : 'lt';
-    }
+  ): 'lt' | 'gt' {
+    const isForward = paginationDirection === 'forward';
+    const isDesc = orderDirection === 'desc';
+    
+    return (isForward && isDesc) || (!isForward && !isDesc) ? 'lt' : 'gt';
+  }
+
+  private getIdOperator(
+    primaryDirection: 'asc' | 'desc',
+    paginationDirection: 'forward' | 'backward'
+  ): 'lt' | 'gt' {
+    const isForward = paginationDirection === 'forward';
+    const isDesc = primaryDirection === 'desc';
+    
+    return (isForward && isDesc) || (!isForward && !isDesc) ? 'lt' : 'gt';
   }
 }
