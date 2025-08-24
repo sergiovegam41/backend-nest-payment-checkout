@@ -9,6 +9,7 @@ import { HealthResponseFactory } from './health/factories/health-response.factor
 import { DatabaseHealthStrategy } from './health/strategies/database-health.strategy';
 import configuration from './config/configuration';
 import { configValidationSchema } from './config/validation.schema';
+import { PaymentProcessorModule } from './payment-processor/payment-processor.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { configValidationSchema } from './config/validation.schema';
     CommonModule,
     PrismaModule,
     ProductModule,
+    PaymentProcessorModule,
   ],
   controllers: [HealthController],
   providers: [
