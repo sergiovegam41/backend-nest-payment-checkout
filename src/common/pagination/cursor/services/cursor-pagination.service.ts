@@ -15,6 +15,7 @@ export class CursorPaginationService {
   async paginate<T extends PrismaModel>(
     options: PaginatedQueryOptions<T>
   ): Promise<CursorPaginatedResponse<T>> {
+    
     const { model, query, baseWhere = {}, orderBy = { createdAt: 'desc' }, select, include } = options;
     const { take = 10, direction = 'forward' } = query;
 
