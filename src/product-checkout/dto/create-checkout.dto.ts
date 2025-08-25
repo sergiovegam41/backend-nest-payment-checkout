@@ -4,7 +4,7 @@ import { Type } from 'class-transformer';
 
 export class CheckoutItemInputDto {
   @ApiProperty({
-    description: 'Product UUID - Identificador único del producto',
+    description: 'Identificador único del producto',
     example: '550e8400-e29b-41d4-a716-446655440000',
     format: 'uuid'
   })
@@ -12,7 +12,7 @@ export class CheckoutItemInputDto {
   id: string;
 
   @ApiProperty({
-    description: 'Quantity to purchase - Cantidad a comprar del producto',
+    description: 'Cantidad a comprar del producto',
     example: 2,
     minimum: 1,
     type: 'integer'
@@ -24,7 +24,7 @@ export class CheckoutItemInputDto {
 
 export class CreateCheckoutDto {
   @ApiProperty({
-    description: 'Lista de productos con sus cantidades - Array of products with their quantities. Cada item debe incluir el ID del producto y la cantidad deseada.',
+    description: 'Lista de productos con sus cantidades',
     example: [
       { id: '550e8400-e29b-41d4-a716-446655440000', quantity: 2 },
       { id: '6ba7b810-9dad-11d1-80b4-00c04fd430c8', quantity: 1 }

@@ -3,60 +3,53 @@ import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { CreateCheckoutDto } from './create-checkout.dto';
 
-/**
- * DTO for card data from frontend
- */
-class CardDataDto {
+export class CardDataDto {
   @ApiProperty({
-    description: 'Card number',
+    description: 'Número de tarjeta (16 dígitos)',
     example: '4242424242424242'
   })
   @IsString()
   number: string;
 
   @ApiProperty({
-    description: 'Card expiration month',
+    description: 'Mes de expiración (2 dígitos)',
     example: '12'
   })
   @IsString()
   exp_month: string;
 
   @ApiProperty({
-    description: 'Card expiration year',
+    description: 'Año de expiración (2 dígitos)',
     example: '29'
   })
   @IsString()
   exp_year: string;
 
   @ApiProperty({
-    description: 'Card CVC/CVV',
+    description: 'Código de seguridad (3 dígitos)',
     example: '123'
   })
   @IsString()
   cvc: string;
 
   @ApiProperty({
-    description: 'Card holder name',
-    example: 'Pedro Perez'
+    description: 'Nombre del titular de la tarjeta',
+    example: 'Juan Pérez'
   })
   @IsString()
   card_holder: string;
 }
 
-/**
- * DTO for creating checkout with card payment
- * Extends base checkout functionality with direct card payment
- */
 export class CreateCheckoutWithCardDto extends CreateCheckoutDto {
   @ApiProperty({
-    description: 'Customer email for transaction',
+    description: 'Email del cliente para la transacción',
     example: 'cliente@ejemplo.com'
   })
   @IsEmail()
   customer_email: string;
 
   @ApiProperty({
-    description: 'Card data for payment',
+    description: 'Datos de la tarjeta para el pago',
     type: CardDataDto
   })
   @ValidateNested()
