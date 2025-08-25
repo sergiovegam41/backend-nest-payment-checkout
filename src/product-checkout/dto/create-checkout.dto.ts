@@ -1,26 +1,37 @@
-import { IsArray, IsNotEmpty, IsOptional, IsNumber, Min, ArrayMinSize, IsUUID } from 'class-validator';
+import { IsArray, IsNotEmpty, IsOptional, IsNumber, Min, ArrayMinSize, IsUUID, ValidateNested } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+
+export class CheckoutItemInputDto {
+  @ApiProperty({
+    description: 'Product UUID',
+    example: '550e8400-e29b-41d4-a716-446655440000'
+  })
+  @IsUUID('4')
+  id: string;
+
+  @ApiProperty({
+    description: 'Quantity to purchase',
+    example: 2,
+    minimum: 1
+  })
+  @IsNumber()
+  @Min(1)
+  quantity: number;
+}
 
 export class CreateCheckoutDto {
   @ApiProperty({
-    description: 'Array of product UUIDs to purchase',
-    example: ['550e8400-e29b-41d4-a716-446655440000', '6ba7b810-9dad-11d1-80b4-00c04fd430c8'],
-    type: [String]
+    description: 'Array of products with their quantities',
+    example: [
+      { id: '550e8400-e29b-41d4-a716-446655440000', quantity: 2 },
+      { id: '6ba7b810-9dad-11d1-80b4-00c04fd430c8', quantity: 1 }
+    ],
+    type: [CheckoutItemInputDto]
   })
   @IsArray()
   @ArrayMinSize(1)
-  @IsUUID('4', { each: true })
-  product_ids: string[];
-
-  @ApiProperty({
-    description: 'Array of quantities for each product (optional, defaults to 1 for each)',
-    example: [2, 1],
-    type: [Number],
-    required: false
-  })
-  @IsOptional()
-  @IsArray()
-  @IsNumber({}, { each: true })
-  @Min(1, { each: true })
-  quantities?: number[];
+  @ValidateNested({ each: true })
+  @Type(() => CheckoutItemInputDto)
+  items: CheckoutItemInputDto[];
 }

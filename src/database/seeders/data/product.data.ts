@@ -8,122 +8,122 @@ export interface ProductTemplate {
 export const PRODUCT_TEMPLATES: ProductTemplate[] = [
   {
     name: 'iPhone 15 Pro',
-    description: 'The latest Apple iPhone with A17 Pro chip and titanium design',
-    basePrice: 999.99,
+    description: 'El último iPhone de Apple con chip A17 Pro y diseño de titanio',
+    basePrice: 4199990,
     category: 'Electronics'
   },
   {
     name: 'Samsung Galaxy S24 Ultra',
-    description: 'Premium Android smartphone with S Pen and AI features',
-    basePrice: 1199.99,
+    description: 'Smartphone Android premium con S Pen y funciones de IA',
+    basePrice: 4999990,
     category: 'Electronics'
   },
   {
     name: 'MacBook Air M3',
-    description: 'Lightweight laptop with Apple M3 chip and all-day battery',
-    basePrice: 1299.99,
+    description: 'Portátil liviano con chip Apple M3 y batería de todo el día',
+    basePrice: 5499990,
     category: 'Computers'
   },
   {
     name: 'Dell XPS 13',
-    description: 'Ultra-portable Windows laptop with InfinityEdge display',
-    basePrice: 1099.99,
+    description: 'Portátil ultracompacto Windows con pantalla InfinityEdge',
+    basePrice: 4699990,
     category: 'Computers'
   },
   {
-    name: 'AirPods Pro (2nd Gen)',
-    description: 'Wireless earbuds with active noise cancellation and spatial audio',
-    basePrice: 249.99,
+    name: 'AirPods Pro (2da Gen)',
+    description: 'Audífonos inalámbricos con cancelación activa de ruido y audio espacial',
+    basePrice: 1049990,
     category: 'Audio'
   },
   {
     name: 'Sony WH-1000XM5',
-    description: 'Industry-leading noise canceling headphones with 30-hour battery',
-    basePrice: 399.99,
+    description: 'Audífonos con cancelación de ruido líder en la industria y batería de 30 horas',
+    basePrice: 1699990,
     category: 'Audio'
   },
   {
     name: 'iPad Pro 12.9"',
-    description: 'Most advanced iPad with M2 chip and Liquid Retina XDR display',
-    basePrice: 1099.99,
+    description: 'iPad más avanzado con chip M2 y pantalla Liquid Retina XDR',
+    basePrice: 4699990,
     category: 'Tablets'
   },
   {
     name: 'Microsoft Surface Pro 9',
-    description: 'Versatile 2-in-1 laptop with detachable keyboard and Surface Pen',
-    basePrice: 999.99,
+    description: 'Portátil 2 en 1 versátil con teclado desmontable y Surface Pen',
+    basePrice: 4199990,
     category: 'Tablets'
   },
   {
     name: 'Apple Watch Ultra 2',
-    description: 'Most rugged Apple Watch with precision GPS and 36-hour battery',
-    basePrice: 799.99,
+    description: 'Apple Watch más resistente con GPS de precisión y batería de 36 horas',
+    basePrice: 3399990,
     category: 'Wearables'
   },
   {
     name: 'Garmin Fenix 7X',
-    description: 'Premium multisport GPS watch with solar charging',
-    basePrice: 899.99,
+    description: 'Reloj GPS multideporte premium con carga solar',
+    basePrice: 3799990,
     category: 'Wearables'
   },
   {
     name: 'Nintendo Switch OLED',
-    description: 'Portable gaming console with vibrant 7-inch OLED screen',
-    basePrice: 349.99,
+    description: 'Consola de juegos portátil con pantalla OLED vibrante de 7 pulgadas',
+    basePrice: 1499990,
     category: 'Gaming'
   },
   {
     name: 'Steam Deck',
-    description: 'Handheld gaming PC that runs your Steam library',
-    basePrice: 649.99,
+    description: 'PC de juegos portátil que ejecuta tu biblioteca de Steam',
+    basePrice: 2799990,
     category: 'Gaming'
   },
   {
     name: 'Canon EOS R5',
-    description: 'Professional mirrorless camera with 8K video recording',
-    basePrice: 3899.99,
+    description: 'Cámara mirrorless profesional con grabación de video 8K',
+    basePrice: 16499990,
     category: 'Cameras'
   },
   {
     name: 'GoPro Hero 12',
-    description: 'Ultra-compact action camera with 5.3K video and HyperSmooth',
-    basePrice: 399.99,
+    description: 'Cámara de acción ultracompacta con video 5.3K e HyperSmooth',
+    basePrice: 1699990,
     category: 'Cameras'
   },
   {
     name: 'Dyson V15 Detect',
-    description: 'Cordless vacuum with laser dust detection and LCD screen',
-    basePrice: 749.99,
+    description: 'Aspiradora inalámbrica con detección láser de polvo y pantalla LCD',
+    basePrice: 3199990,
     category: 'Home'
   },
   {
     name: 'Nest Thermostat',
-    description: 'Smart thermostat that learns your schedule and saves energy',
-    basePrice: 249.99,
+    description: 'Termostato inteligente que aprende tu horario y ahorra energía',
+    basePrice: 1049990,
     category: 'Home'
   },
   {
     name: 'Kindle Oasis',
-    description: 'Premium e-reader with 7-inch display and adjustable warm light',
-    basePrice: 279.99,
+    description: 'E-reader premium con pantalla de 7 pulgadas y luz cálida ajustable',
+    basePrice: 1199990,
     category: 'Books'
   },
   {
     name: 'JBL Flip 6',
-    description: 'Portable Bluetooth speaker with powerful sound and IP67 rating',
-    basePrice: 129.99,
+    description: 'Altavoz Bluetooth portátil con sonido potente y clasificación IP67',
+    basePrice: 549990,
     category: 'Audio'
   },
   {
     name: 'Fitbit Versa 4',
-    description: 'Health and fitness smartwatch with GPS and 6+ day battery',
-    basePrice: 199.99,
+    description: 'Smartwatch de salud y fitness con GPS y batería de más de 6 días',
+    basePrice: 849990,
     category: 'Wearables'
   },
   {
     name: 'Roku Ultra',
-    description: '4K streaming device with Dolby Vision and voice remote',
-    basePrice: 99.99,
+    description: 'Dispositivo de streaming 4K con Dolby Vision y control remoto por voz',
+    basePrice: 419990,
     category: 'Electronics'
   }
 ];

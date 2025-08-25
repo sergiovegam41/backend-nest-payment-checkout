@@ -17,14 +17,16 @@ export class ProductCheckoutService {
   ) {}
 
   async createCheckout(createCheckoutDto: CreateCheckoutDto): Promise<CheckoutResponseDto> {
-    const { product_ids, quantities } = createCheckoutDto;
+    const { items: requestItems } = createCheckoutDto;
+    const product_ids = requestItems.map(item => item.id);
+    const quantities = requestItems.map(item => item.quantity);
 
     try {
-      console.log('🛒 Starting checkout creation:', { product_ids, quantities });
+      console.log('🛒 Starting checkout creation:', { items: requestItems });
 
-      // 1. Normalize quantities array
-      const normalizedQuantities = this.normalizeQuantities(product_ids, quantities);
-      console.log('📊 Normalized quantities:', normalizedQuantities);
+      // 1. Extract product IDs and quantities from items
+      console.log('📊 Extracted product_ids:', product_ids);
+      console.log('📊 Extracted quantities:', quantities);
 
       // 2. Validate products exist and are active
       console.log('✅ Validating products...');
@@ -32,11 +34,11 @@ export class ProductCheckoutService {
 
       // 3. Validate quantities
       console.log('🔢 Validating quantities...');
-      await this.validator.validateQuantities(normalizedQuantities);
+      await this.validator.validateQuantities(quantities);
 
       // 4. Validate stock availability
       console.log('📦 Validating stock...');
-      await this.validator.validateStock(product_ids, normalizedQuantities);
+      await this.validator.validateStock(product_ids, quantities);
 
       // 5. Get product details for response
       console.log('🔍 Getting product details...');
@@ -45,7 +47,7 @@ export class ProductCheckoutService {
 
       // 6. Calculate pricing
       console.log('💰 Calculating pricing...');
-      const subtotal = await this.calculator.calculateSubtotal(product_ids, normalizedQuantities);
+      const subtotal = await this.calculator.calculateSubtotal(product_ids, quantities);
       const taxes = await this.calculator.calculateTaxes(subtotal);
       const total = Math.round(subtotal + taxes); // Convert to integer cents
       console.log('💵 Pricing calculated:', { subtotal, taxes, total, totalRounded: total });
@@ -62,9 +64,9 @@ export class ProductCheckoutService {
           items: {
             create: products.map((product, index) => ({
               productId: product.id,
-              quantity: normalizedQuantities[index],
+              quantity: quantities[index],
               unitPrice: Math.round(product.price.toNumber()),
-              totalPrice: Math.round(product.price.toNumber() * normalizedQuantities[index])
+              totalPrice: Math.round(product.price.toNumber() * quantities[index])
             }))
           }
         },
@@ -150,14 +152,16 @@ export class ProductCheckoutService {
   }
 
   async createCheckoutWithCard(createCheckoutDto: CreateCheckoutWithCardDto): Promise<CheckoutResponseDto> {
-    const { product_ids, quantities, customer_email, card_data } = createCheckoutDto;
+    const { items: requestItems, customer_email, card_data } = createCheckoutDto;
+    const product_ids = requestItems.map(item => item.id);
+    const quantities = requestItems.map(item => item.quantity);
 
     try {
-      console.log('💳 Starting card-based checkout creation:', { product_ids, quantities, customer_email });
+      console.log('💳 Starting card-based checkout creation:', { items: requestItems, customer_email });
 
-      // 1. Normalize quantities array
-      const normalizedQuantities = this.normalizeQuantities(product_ids, quantities);
-      console.log('📊 Normalized quantities:', normalizedQuantities);
+      // 1. Extract product IDs and quantities from items
+      console.log('📊 Extracted product_ids:', product_ids);
+      console.log('📊 Extracted quantities:', quantities);
 
       // 2. Validate products exist and are active
       console.log('✅ Validating products...');
@@ -165,11 +169,11 @@ export class ProductCheckoutService {
 
       // 3. Validate quantities
       console.log('🔢 Validating quantities...');
-      await this.validator.validateQuantities(normalizedQuantities);
+      await this.validator.validateQuantities(quantities);
 
       // 4. Validate stock availability
       console.log('📦 Validating stock...');
-      await this.validator.validateStock(product_ids, normalizedQuantities);
+      await this.validator.validateStock(product_ids, quantities);
 
       // 5. Get product details for response
       console.log('🔍 Getting product details...');
@@ -178,7 +182,7 @@ export class ProductCheckoutService {
 
       // 6. Calculate pricing
       console.log('💰 Calculating pricing...');
-      const subtotal = await this.calculator.calculateSubtotal(product_ids, normalizedQuantities);
+      const subtotal = await this.calculator.calculateSubtotal(product_ids, quantities);
       const taxes = await this.calculator.calculateTaxes(subtotal);
       const total = Math.round(subtotal + taxes); // Convert to integer cents
       console.log('💵 Pricing calculated:', { subtotal, taxes, total, totalRounded: total });
@@ -195,9 +199,9 @@ export class ProductCheckoutService {
           items: {
             create: products.map((product, index) => ({
               productId: product.id,
-              quantity: normalizedQuantities[index],
+              quantity: quantities[index],
               unitPrice: Math.round(product.price.toNumber()),
-              totalPrice: Math.round(product.price.toNumber() * normalizedQuantities[index])
+              totalPrice: Math.round(product.price.toNumber() * quantities[index])
             }))
           }
         },
@@ -474,17 +478,6 @@ export class ProductCheckoutService {
     };
   }
 
-  private normalizeQuantities(productIds: string[], quantities?: number[]): number[] {
-    if (!quantities) {
-      return new Array(productIds.length).fill(1);
-    }
-
-    if (quantities.length !== productIds.length) {
-      throw new BadRequestException('Quantities array must have same length as product_ids array');
-    }
-
-    return quantities;
-  }
 
   private async getProductDetails(productIds: string[]) {
     return await this.prisma.product.findMany({

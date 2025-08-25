@@ -41,17 +41,38 @@ export class PrismaSeederStrategy implements ISeederStrategy {
   }
 
   async truncate(model: string): Promise<void> {
-    const modelDelegate = this.getModelDelegate(model);
-    
-    if (!modelDelegate) {
-      throw new Error(`Model ${model} not found in Prisma client`);
-    }
-
     try {
+      // Special handling for products - need to clean related data first
+      if (model === 'product') {
+        console.log('🧹 Cleaning related data before truncating products...');
+        
+        // Delete in order of foreign key dependencies
+        await this.prisma.checkoutItem.deleteMany();
+        console.log('   ✅ Cleaned checkout_items');
+        
+        await this.prisma.checkout.deleteMany();
+        console.log('   ✅ Cleaned checkouts');
+        
+        await (this.prisma as any).productImage.deleteMany();
+        console.log('   ✅ Cleaned product_images');
+        
+        await this.prisma.product.deleteMany();
+        console.log('   ✅ Cleaned products');
+        
+        return;
+      }
+      
+      // Regular truncation for other models
+      const modelDelegate = this.getModelDelegate(model);
+      
+      if (!modelDelegate) {
+        throw new Error(`Model ${model} not found in Prisma client`);
+      }
+
       await modelDelegate.deleteMany();
       
     } catch (error) {
-      
+      console.error(`Error truncating model ${model}:`, error);
       throw error;
     }
   }
@@ -65,6 +86,8 @@ export class PrismaSeederStrategy implements ISeederStrategy {
     const modelMap: Record<string, any> = {
       'product': this.prisma.product,
       'productImage': (this.prisma as any).productImage,
+      'checkout': this.prisma.checkout,
+      'checkoutItem': this.prisma.checkoutItem,
       // Add more models as needed
     };
 
