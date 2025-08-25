@@ -1,14 +1,16 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PaymentProcessorService } from '../../payment-processor/payment-processor.service';
 import { CheckoutCalculatorService } from './checkout-calculator.service';
 import { CheckoutValidatorService } from './checkout-validator.service';
-import { CreateCheckoutDto, CreateCheckoutWithCardDto, CheckoutResponseDto, CheckoutItemDto, WompiWebhookDto } from '../dto';
+import { CreateCheckoutWithCardDto, CheckoutResponseDto, CheckoutItemDto, CheckoutSimpleStatusDto, WompiWebhookDto } from '../dto';
 import { Checkout, CheckoutStatus } from '@prisma/client';
-import { CardTokenRequest, TransactionRequest } from '../../payment-processor/interfaces';
+import { CardTokenRequest } from '../../payment-processor/interfaces';
 
 @Injectable()
 export class ProductCheckoutService {
+  private readonly logger = new Logger(ProductCheckoutService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly paymentProcessor: PaymentProcessorService,
@@ -16,179 +18,50 @@ export class ProductCheckoutService {
     private readonly validator: CheckoutValidatorService
   ) {}
 
-  async createCheckout(createCheckoutDto: CreateCheckoutDto): Promise<CheckoutResponseDto> {
-    const { items: requestItems } = createCheckoutDto;
-    const product_ids = requestItems.map(item => item.id);
-    const quantities = requestItems.map(item => item.quantity);
+  // MÉTODO ELIMINADO: Solo usamos el flujo de pago con tarjeta
 
-    try {
-      console.log('🛒 Starting checkout creation:', { items: requestItems });
-
-      // 1. Extract product IDs and quantities from items
-      console.log('📊 Extracted product_ids:', product_ids);
-      console.log('📊 Extracted quantities:', quantities);
-
-      // 2. Validate products exist and are active
-      console.log('✅ Validating products...');
-      await this.validator.validateProducts(product_ids);
-
-      // 3. Validate quantities
-      console.log('🔢 Validating quantities...');
-      await this.validator.validateQuantities(quantities);
-
-      // 4. Validate stock availability
-      console.log('📦 Validating stock...');
-      await this.validator.validateStock(product_ids, quantities);
-
-      // 5. Get product details for response
-      console.log('🔍 Getting product details...');
-      const products = await this.getProductDetails(product_ids);
-      console.log('📋 Found products:', products.map(p => ({ id: p.id, name: p.name, price: p.price })));
-
-      // 6. Calculate pricing
-      console.log('💰 Calculating pricing...');
-      const subtotal = await this.calculator.calculateSubtotal(product_ids, quantities);
-      const taxes = await this.calculator.calculateTaxes(subtotal);
-      const total = Math.round(subtotal + taxes); // Convert to integer cents
-      console.log('💵 Pricing calculated:', { subtotal, taxes, total, totalRounded: total });
-
-      // 7. Save checkout to database first
-      console.log('💾 Saving checkout to database...');
-      const checkout = await this.prisma.checkout.create({
-        data: {
-          total,
-          subtotal,
-          taxes,
-          currency: 'COP',
-          status: CheckoutStatus.PENDING,
-          items: {
-            create: products.map((product, index) => ({
-              productId: product.id,
-              quantity: quantities[index],
-              unitPrice: Math.round(product.price.toNumber()),
-              totalPrice: Math.round(product.price.toNumber() * quantities[index])
-            }))
-          }
-        },
-        include: {
-          items: {
-            include: {
-              product: true
-            }
-          }
-        }
-      });
-      console.log('✅ Checkout saved to database:', checkout.id);
-
-      // 8. Create payment link with checkout reference
-      console.log('🔗 Creating payment link...');
-      const paymentLink = await this.paymentProcessor.createPaymentLink({
-        amount_in_cents: total,
-        currency: 'COP',
-        name: 'Product Purchase',
-        description: `Purchase of ${product_ids.length} product(s) - Checkout: ${checkout.id}`,
-        single_use: true,
-        collect_shipping: false
-      });
-      console.log('🔗 Payment link response:', paymentLink);
-
-      if (!paymentLink.success || !paymentLink.payment_url) {
-        // If payment link fails, delete the checkout
-        await this.prisma.checkout.delete({ where: { id: checkout.id } });
-        throw new BadRequestException('Failed to create payment link');
-      }
-
-      // 9. Update checkout with payment info
-      await this.prisma.checkout.update({
-        where: { id: checkout.id },
-        data: {
-          paymentUrl: paymentLink.payment_url,
-          providerPaymentId: paymentLink.payment_id
-        }
-      });
-
-      // 10. Build response (convert from cents back to pesos for display)
-      const items: CheckoutItemDto[] = checkout.items.map(item => ({
-        product_id: item.productId,
-        name: item.product.name,
-        unit_price: Math.round(item.unitPrice / 100), // Convert cents back to pesos for display
-        quantity: item.quantity,
-        total_price: Math.round(item.totalPrice / 100) // Convert cents back to pesos for display
-      }));
-
-      return {
-        checkout_id: checkout.id,
-        items,
-        subtotal: Math.round(subtotal / 100), // Convert to pesos for display
-        taxes: Math.round(taxes / 100), // Convert to pesos for display  
-        total: Math.round(total / 100), // Convert to pesos for display
-        payment_url: paymentLink.payment_url,
-        currency: 'COP'
-      };
-
-    } catch (error) {
-      console.error('🚨 Checkout creation failed:', error);
-      
-      // Provide more specific error messages
-      if (error.code === 'P2002') {
-        throw new BadRequestException('Duplicate checkout creation attempt');
-      }
-      
-      if (error.code === 'P2025') {
-        throw new BadRequestException('One or more products not found');
-      }
-      
-      if (error.message?.includes('payment link')) {
-        throw new BadRequestException(`Payment link creation failed: ${error.message}`);
-      }
-      
-      if (error.message?.includes('validation')) {
-        throw new BadRequestException(`Validation error: ${error.message}`);
-      }
-      
-      // Include full error details for debugging
-      throw new BadRequestException(`Checkout failed: ${error.message} (Code: ${error.code || 'UNKNOWN'})`);
-    }
-  }
-
-  async createCheckoutWithCard(createCheckoutDto: CreateCheckoutWithCardDto): Promise<CheckoutResponseDto> {
+  // Renombrado a createCheckout - ahora es el único método principal
+  async createCheckout(createCheckoutDto: CreateCheckoutWithCardDto): Promise<CheckoutResponseDto> {
     const { items: requestItems, customer_email, card_data } = createCheckoutDto;
     const product_ids = requestItems.map(item => item.id);
     const quantities = requestItems.map(item => item.quantity);
 
-    try {
-      console.log('💳 Starting card-based checkout creation:', { items: requestItems, customer_email });
+    this.logger.log('Starting checkout creation with card payment', {
+      itemsCount: requestItems.length,
+      customer_email
+    });
 
+    try {
       // 1. Extract product IDs and quantities from items
-      console.log('📊 Extracted product_ids:', product_ids);
-      console.log('📊 Extracted quantities:', quantities);
+      this.logger.debug('Extracted product data', { product_ids, quantities });
 
       // 2. Validate products exist and are active
-      console.log('✅ Validating products...');
+      this.logger.debug('Validating products...');
       await this.validator.validateProducts(product_ids);
 
       // 3. Validate quantities
-      console.log('🔢 Validating quantities...');
+      this.logger.debug('Validating quantities...');
       await this.validator.validateQuantities(quantities);
 
       // 4. Validate stock availability
-      console.log('📦 Validating stock...');
+      this.logger.debug('Validating stock...');
       await this.validator.validateStock(product_ids, quantities);
 
       // 5. Get product details for response
-      console.log('🔍 Getting product details...');
+      this.logger.debug('Getting product details...');
       const products = await this.getProductDetails(product_ids);
-      console.log('📋 Found products:', products.map(p => ({ id: p.id, name: p.name, price: p.price })));
-
+      
       // 6. Calculate pricing
-      console.log('💰 Calculating pricing...');
+      this.logger.debug('Calculating pricing...');
       const subtotal = await this.calculator.calculateSubtotal(product_ids, quantities);
       const taxes = await this.calculator.calculateTaxes(subtotal);
-      const total = Math.round(subtotal + taxes); // Convert to integer cents
-      console.log('💵 Pricing calculated:', { subtotal, taxes, total, totalRounded: total });
+      const rawTotal = subtotal + taxes;
+      // CRÍTICO: Wompi no acepta centavos, redondear a pesos completos
+      const total = Math.round(rawTotal / 100) * 100; // Redondear a pesos completos en centavos
+      this.logger.debug('Pricing calculated', { subtotal, taxes, rawTotal, total });
 
       // 7. Save checkout to database first
-      console.log('💾 Saving checkout to database...');
+      this.logger.debug('Saving checkout to database...');
       const checkout = await this.prisma.checkout.create({
         data: {
           total,
@@ -213,74 +86,44 @@ export class ProductCheckoutService {
           }
         }
       });
-      console.log('✅ Checkout saved to database:', checkout.id);
+      this.logger.log('Checkout saved to database', { checkout_id: checkout.id });
 
-      // 8. Process direct transaction
-      console.log('💳 Processing direct transaction...');
+      // 8. Process direct transaction using PaymentProcessor
+      this.logger.debug('Processing direct transaction...');
       
-      // 8.1. Get merchant info for acceptance token
-      console.log('🏢 Getting merchant info...');
-      const provider = this.paymentProcessor.getProvider();
-      const merchantInfo = await provider.getMerchantInfo();
-      
-      if (!merchantInfo.success || !merchantInfo.data) {
-        throw new BadRequestException('Failed to get merchant information');
-      }
-      
-      // 8.2. Tokenize card data
-      console.log('🔒 Tokenizing card data...');
       const cardTokenRequest: CardTokenRequest = {
         number: card_data.number,
         exp_month: card_data.exp_month,
-        exp_year: card_data.exp_year.length > 2 ? card_data.exp_year.slice(-2) : card_data.exp_year, // Convert 2025 -> 25
+        exp_year: card_data.exp_year.length > 2 ? card_data.exp_year.slice(-2) : card_data.exp_year,
         cvc: card_data.cvc,
         card_holder: card_data.card_holder
       };
       
-      const tokenResult = await provider.tokenizeCard(cardTokenRequest);
-      
-      if (!tokenResult.success || !tokenResult.data) {
-        throw new BadRequestException(`Card tokenization failed: ${tokenResult.error_message}`);
-      }
-      
-      console.log('✅ Card tokenized successfully:', tokenResult.data.data.id);
-      
-      // 8.3. Generate signature
-      console.log('🔐 Generating transaction signature...');
-      const signature = await provider.generateSignature(checkout.id, total, 'COP');
-      
-      // 8.4. Create transaction
-      console.log('💳 Creating direct transaction...');
-      const transactionRequest: TransactionRequest = {
-        amount_in_cents: total,
-        currency: 'COP',
-        customer_email: customer_email,
-        reference: checkout.id,
-        payment_method: {
-          type: 'CARD',
-          token: tokenResult.data.data.id,
-          installments: 1
-        },
-        acceptance_token: merchantInfo.data.data.presigned_acceptance.acceptance_token,
-        signature: signature
-      };
-      
-      const transactionResult = await provider.createTransaction(transactionRequest);
+      const transactionResult = await this.paymentProcessor.processDirectTransaction(
+        checkout.id,
+        total,
+        'COP',
+        customer_email,
+        cardTokenRequest
+      );
       
       if (!transactionResult.success || !transactionResult.data) {
         // If transaction fails, delete the checkout
         await this.prisma.checkout.delete({ where: { id: checkout.id } });
-        throw new BadRequestException(`Transaction failed: ${transactionResult.error_message}`);
+        throw new BadRequestException('Transaction processing failed');
       }
       
-      console.log('✅ Transaction created successfully:', transactionResult.data.data.id);
+      this.logger.log('Transaction processed successfully', {
+        transaction_id: transactionResult.data.transactionId,
+        status: transactionResult.data.status
+      });
       
       // 9. Update checkout with transaction info
       await this.prisma.checkout.update({
         where: { id: checkout.id },
         data: {
-          providerPaymentId: transactionResult.data.data.id,
-          status: transactionResult.data.data.status === 'APPROVED' ? CheckoutStatus.PAID : CheckoutStatus.PENDING
+          providerPaymentId: transactionResult.data.transactionId,
+          status: transactionResult.data.status === 'APPROVED' ? CheckoutStatus.PAID : CheckoutStatus.PENDING
         }
       });
 
@@ -288,20 +131,20 @@ export class ProductCheckoutService {
       const items: CheckoutItemDto[] = checkout.items.map(item => ({
         product_id: item.productId,
         name: item.product.name,
-        unit_price: Math.round(item.unitPrice / 100), // Convert cents back to pesos for display
+        unit_price: Math.round(item.unitPrice / 100),
         quantity: item.quantity,
-        total_price: Math.round(item.totalPrice / 100) // Convert cents back to pesos for display
+        total_price: Math.round(item.totalPrice / 100)
       }));
 
       return {
         checkout_id: checkout.id,
         items,
-        subtotal: Math.round(subtotal / 100), // Convert to pesos for display
-        taxes: Math.round(taxes / 100), // Convert to pesos for display  
-        total: Math.round(total / 100), // Convert to pesos for display
+        subtotal: Math.round(subtotal / 100),
+        taxes: Math.round(taxes / 100),  
+        total: Math.round(total / 100),
         currency: 'COP',
-        transaction_id: transactionResult.data.data.id,
-        transaction_status: transactionResult.data.data.status,
+        transaction_id: transactionResult.data.transactionId,
+        transaction_status: transactionResult.data.status,
         payment_method_info: {
           type: 'CARD',
           last_four: card_data.number.slice(-4),
@@ -310,21 +153,17 @@ export class ProductCheckoutService {
       };
 
     } catch (error) {
-      console.error('🚨 Card-based checkout creation failed:', error);
+      this.logger.error('Checkout creation failed', {
+        error: error.message,
+        code: error.code
+      });
+      
+      // Handle PaymentProcessorException specifically
+      if (error.name === 'PaymentProcessorException') {
+        throw error;
+      }
       
       // Provide more specific error messages
-      if (error.message?.includes('tokenization')) {
-        throw new BadRequestException(`Card tokenization failed: ${error.message}`);
-      }
-      
-      if (error.message?.includes('transaction')) {
-        throw new BadRequestException(`Transaction processing failed: ${error.message}`);
-      }
-      
-      if (error.message?.includes('merchant')) {
-        throw new BadRequestException(`Merchant info retrieval failed: ${error.message}`);
-      }
-      
       if (error.code === 'P2002') {
         throw new BadRequestException('Duplicate checkout creation attempt');
       }
@@ -337,12 +176,14 @@ export class ProductCheckoutService {
         throw new BadRequestException(`Validation error: ${error.message}`);
       }
       
-      // Include full error details for debugging
-      throw new BadRequestException(`Card-based checkout failed: ${error.message} (Code: ${error.code || 'UNKNOWN'})`);
+      throw new BadRequestException(`Checkout failed: ${error.message}`);
     }
   }
 
-  async getCheckoutStatus(checkoutId: string) {
+  async getCheckoutStatus(checkoutId: string): Promise<CheckoutSimpleStatusDto> {
+    this.logger.log(`Getting checkout status for ID: ${checkoutId}`);
+
+    // 1. Buscar checkout en la base de datos
     const checkout = await this.prisma.checkout.findUnique({
       where: { id: checkoutId },
       include: {
@@ -360,29 +201,122 @@ export class ProductCheckoutService {
     });
 
     if (!checkout) {
+      this.logger.warn(`Checkout not found: ${checkoutId}`);
       throw new BadRequestException(`Checkout with ID ${checkoutId} not found`);
     }
 
-    return {
+    this.logger.debug(`Checkout found`, { 
       checkout_id: checkout.id,
       status: checkout.status,
-      total: checkout.total,
-      subtotal: checkout.subtotal,
-      taxes: checkout.taxes,
-      currency: checkout.currency,
-      payment_url: checkout.paymentUrl || undefined,
-      provider_payment_id: checkout.providerPaymentId || undefined,
-      created_at: checkout.createdAt.toISOString(),
-      updated_at: checkout.updatedAt.toISOString(),
-      paid_at: checkout.paidAt?.toISOString(),
-      items: checkout.items.map(item => ({
-        product_id: item.productId,
-        product_name: item.product.name,
-        quantity: item.quantity,
-        unit_price: item.unitPrice,
-        total_price: item.totalPrice
-      }))
+      provider_payment_id: checkout.providerPaymentId
+    });
+
+    let updatedCheckout = checkout;
+    let transactionDetails: any = null;
+
+    // 2. Si tiene transaction_id, consultar estado en Wompi
+    if (checkout.providerPaymentId) {
+      this.logger.debug(`Checking transaction status in Wompi: ${checkout.providerPaymentId}`);
+      
+      try {
+        const transactionStatus = await this.paymentProcessor.getTransactionStatus(
+          checkout.providerPaymentId
+        );
+
+        if (transactionStatus.success && transactionStatus.data) {
+          transactionDetails = transactionStatus.data.data;
+          
+          if (transactionDetails) {
+            this.logger.debug('Transaction details from Wompi', {
+              transaction_id: transactionDetails.id,
+              status: transactionDetails.status,
+              amount: transactionDetails.amount_in_cents
+            });
+
+            // 3. Actualizar estado del checkout si es diferente
+            const currentStatus = this.mapWompiStatusToCheckout(transactionDetails.status);
+            if (currentStatus && currentStatus !== checkout.status) {
+              this.logger.log(`Updating checkout status from ${checkout.status} to ${currentStatus}`);
+              
+              const updateData: any = {
+                status: currentStatus,
+                updatedAt: new Date()
+              };
+
+              // Si el pago fue aprobado, marcar como pagado
+              if (currentStatus === CheckoutStatus.PAID && !checkout.paidAt) {
+                updateData.paidAt = new Date();
+              }
+
+              updatedCheckout = await this.prisma.checkout.update({
+                where: { id: checkoutId },
+                data: updateData,
+                include: {
+                  items: {
+                    include: {
+                      product: {
+                        select: {
+                          id: true,
+                          name: true
+                        }
+                      }
+                    }
+                  }
+                }
+              });
+
+              this.logger.log(`Checkout status updated successfully`);
+            }
+          }
+        } else {
+          this.logger.warn('Failed to get transaction status from Wompi', {
+            error: transactionStatus.error_message
+          });
+        }
+      } catch (error) {
+        this.logger.error('Error checking transaction status', {
+          error: error.message,
+          transaction_id: checkout.providerPaymentId
+        });
+        // No fallar el endpoint si Wompi no responde, usar datos locales
+      }
+    } else {
+      this.logger.debug('No transaction_id found, returning local status only');
+    }
+
+    // 4. Construir respuesta simplificada - Solo estado y total
+    const response = {
+      status: updatedCheckout.status,
+      total: Math.round(updatedCheckout.total / 100) // Convertir a pesos para display
     };
+
+    this.logger.log(`Checkout status retrieved successfully`, {
+      checkout_id: checkoutId,
+      status: response.status,
+      has_transaction_details: !!transactionDetails
+    });
+
+    return response;
+  }
+
+  /**
+   * Mapea el estado de Wompi al estado de checkout
+   */
+  private mapWompiStatusToCheckout(wompiStatus: string): CheckoutStatus | null {
+    switch (wompiStatus?.toUpperCase()) {
+      case 'APPROVED':
+        return CheckoutStatus.PAID;
+      case 'DECLINED':
+      case 'ERROR':
+        return CheckoutStatus.FAILED;
+      case 'VOIDED':
+        return CheckoutStatus.CANCELLED;
+      case 'PENDING':
+        return CheckoutStatus.PENDING;
+      default:
+        this.logger.warn(`Unknown Wompi status: ${wompiStatus}`);
+        return null;
+    }
   }
 
   async handleWompiWebhook(webhook: WompiWebhookDto): Promise<{ success: boolean; message: string }> {

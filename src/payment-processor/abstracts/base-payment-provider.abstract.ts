@@ -22,6 +22,7 @@ export abstract class BasePaymentProvider implements IPaymentProvider {
   abstract tokenizeCard(cardData: CardTokenRequest): Promise<{ success: boolean; data?: CardTokenResponse; error_message?: string }>;
   abstract getMerchantInfo(): Promise<{ success: boolean; data?: MerchantInfoResponse; error_message?: string }>;
   abstract createTransaction(transactionData: TransactionRequest): Promise<{ success: boolean; data?: TransactionResponse; error_message?: string }>;
+  abstract getTransactionStatus(transactionId: string): Promise<{ success: boolean; data?: any; error_message?: string }>;
   abstract generateSignature(reference: string, amountInCents: number, currency: string): Promise<string>;
   
   protected abstract mapProviderStatusToGeneric(providerStatus: string): PaymentStatus;

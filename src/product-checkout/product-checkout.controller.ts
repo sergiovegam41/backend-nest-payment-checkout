@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { ProductCheckoutService } from './services/product-checkout.service';
-import { CreateCheckoutDto, CreateCheckoutWithCardDto, CheckoutResponseDto, CheckoutStatusResponseDto, WompiWebhookDto } from './dto';
+import { CreateCheckoutWithCardDto, CheckoutResponseDto, CheckoutSimpleStatusDto, WompiWebhookDto } from './dto';
 
 @ApiTags('product-checkout')
 @Controller('product-checkout')
@@ -10,32 +10,8 @@ export class ProductCheckoutController {
 
   @Post()
   @ApiOperation({ 
-    summary: 'Crear checkout de productos',
-    description: 'Crea una sesión de checkout para productos seleccionados y retorna URL de pago. Requiere un array de productos con sus cantidades respectivas.'
-  })
-  @ApiResponse({ 
-    status: 201, 
-    description: 'Checkout creado exitosamente', 
-    type: CheckoutResponseDto 
-  })
-  @ApiResponse({ 
-    status: 400, 
-    description: 'Validación fallida o productos no encontrados'
-  })
-  @ApiResponse({ 
-    status: 404, 
-    description: 'Uno o más productos no encontrados'
-  })
-  async createCheckout(
-    @Body() createCheckoutDto: CreateCheckoutDto
-  ): Promise<CheckoutResponseDto> {
-    return await this.productCheckoutService.createCheckout(createCheckoutDto);
-  }
-
-  @Post('with-card')
-  @ApiOperation({ 
     summary: 'Crear checkout y procesar pago con tarjeta',
-    description: 'Crea una sesión de checkout y procesa el pago inmediatamente con los datos de tarjeta proporcionados usando transacción directa con Wompi. El año de expiración debe estar en formato de 2 dígitos.'
+    description: 'Crea una sesión de checkout y procesa el pago inmediatamente con los datos de tarjeta proporcionados usando transacción directa. El año de expiración debe estar en formato de 2 dígitos.'
   })
   @ApiResponse({ 
     status: 201, 
@@ -50,34 +26,41 @@ export class ProductCheckoutController {
     status: 404, 
     description: 'Productos no encontrados'
   })
-  async createCheckoutWithCard(
+  async createCheckout(
     @Body() createCheckoutDto: CreateCheckoutWithCardDto
   ): Promise<CheckoutResponseDto> {
-    return await this.productCheckoutService.createCheckoutWithCard(createCheckoutDto);
+    return await this.productCheckoutService.createCheckout(createCheckoutDto);
   }
+
+  // ENDPOINT ELIMINADO: Ahora solo usamos POST / para pagos con tarjeta
 
   @Get(':checkout_id/status')
   @ApiOperation({ 
-    summary: 'Get checkout status',
-    description: 'Retrieves the current status and details of a checkout'
+    summary: 'Obtener estado del checkout y transacción',
+    description: 'Obtiene el estado actual del checkout desde la BD local y consulta el estado real de la transacción en Wompi API. Actualiza automáticamente el estado local si es necesario.'
   })
   @ApiParam({
     name: 'checkout_id',
-    description: 'Checkout UUID',
-    example: '7ba7b810-9dad-11d1-80b4-00c04fd430c8'
+    description: 'UUID del checkout',
+    example: '99c066b6-882e-4c59-8ab8-d9721bbb3d9f'
   })
   @ApiResponse({ 
     status: 200, 
-    description: 'Checkout status retrieved successfully', 
-    type: CheckoutStatusResponseDto 
+    description: 'Estado del checkout obtenido exitosamente. Consulta estado en Wompi y actualiza BD automáticamente.', 
+    schema: {
+      example: {
+        status: 'PAID',
+        total: 6664040
+      }
+    }
   })
   @ApiResponse({ 
     status: 400, 
-    description: 'Checkout not found'
+    description: 'Checkout no encontrado'
   })
   async getCheckoutStatus(
     @Param('checkout_id') checkoutId: string
-  ): Promise<CheckoutStatusResponseDto> {
+  ): Promise<CheckoutSimpleStatusDto> {
     return await this.productCheckoutService.getCheckoutStatus(checkoutId);
   }
 

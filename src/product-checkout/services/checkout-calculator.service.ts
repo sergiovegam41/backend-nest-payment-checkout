@@ -9,7 +9,10 @@ export class CheckoutCalculatorService implements ICheckoutCalculator {
   async calculateTotal(productIds: string[], quantities?: number[]): Promise<number> {
     const subtotal = await this.calculateSubtotal(productIds, quantities);
     const taxes = await this.calculateTaxes(subtotal);
-    return subtotal + taxes;
+    const total = subtotal + taxes;
+    // IMPORTANTE: Wompi no acepta centavos, redondear a pesos completos
+    // Si el total tiene centavos, redondear hacia arriba a la siguiente unidad de peso
+    return Math.round(total / 100) * 100; // Convierte a pesos completos en centavos
   }
 
   async calculateSubtotal(productIds: string[], quantities?: number[]): Promise<number> {

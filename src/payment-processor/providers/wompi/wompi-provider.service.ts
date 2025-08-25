@@ -423,4 +423,62 @@ export class WompiProviderService extends BasePaymentProvider {
       return '';
     }
   }
+
+  /**
+   * Get transaction status by ID
+   * GET https://api-sandbox.co.uat.wompi.dev/v1/transactions/{transaction_id}
+   */
+  async getTransactionStatus(transactionId: string): Promise<{ success: boolean; data?: any; error_message?: string }> {
+    try {
+      console.log('🔍 WompiProvider - Checking transaction status for ID:', transactionId);
+      const credentials = await this.getCredentials();
+      const endpoint = this.getEndpoint(credentials.environment);
+      const url = `${endpoint}/transactions/${transactionId}`;
+      
+      console.log('🌐 WompiProvider - Transaction status URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${credentials.private_key}`
+        }
+      });
+
+      console.log('📡 WompiProvider - Transaction status HTTP Status:', response.status);
+      
+      const responseText = await response.text();
+      console.log('📡 WompiProvider - Raw transaction status response:', responseText);
+
+      let result: any;
+      try {
+        result = JSON.parse(responseText);
+        console.log('📡 WompiProvider - Parsed transaction status:', JSON.stringify(result, null, 2));
+      } catch (parseError) {
+        console.error('❌ WompiProvider - Failed to parse transaction status response:', parseError);
+        return {
+          success: false,
+          error_message: `Failed to parse transaction status: ${responseText}`
+        };
+      }
+
+      if (response.status === 200) {
+        console.log('✅ WompiProvider - Transaction status retrieved successfully');
+        return { success: true, data: result };
+      }
+
+      console.error('❌ WompiProvider - Failed to get transaction status:', result);
+      return { 
+        success: false, 
+        error_message: result.error?.message || `HTTP ${response.status}: ${JSON.stringify(result)}` 
+      };
+
+    } catch (error) {
+      console.error('💥 WompiProvider - Network error checking transaction status:', error);
+      return { 
+        success: false, 
+        error_message: `Transaction status check failed: ${error.message}` 
+      };
+    }
+  }
 }

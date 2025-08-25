@@ -14,6 +14,7 @@ export interface IPaymentProvider {
   tokenizeCard(cardData: CardTokenRequest): Promise<{ success: boolean; data?: CardTokenResponse; error_message?: string }>;
   getMerchantInfo(): Promise<{ success: boolean; data?: MerchantInfoResponse; error_message?: string }>;
   createTransaction(transactionData: TransactionRequest): Promise<{ success: boolean; data?: TransactionResponse; error_message?: string }>;
+  getTransactionStatus(transactionId: string): Promise<{ success: boolean; data?: any; error_message?: string }>;
   
   // Utility methods
   generateSignature(reference: string, amountInCents: number, currency: string): Promise<string>;
