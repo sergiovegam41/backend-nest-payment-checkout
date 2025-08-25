@@ -10,21 +10,37 @@ export class ProductCheckoutController {
 
   @Post()
   @ApiOperation({ 
-    summary: 'Create product checkout',
-    description: 'Creates a checkout session for selected products and returns payment URL'
+    summary: 'Crear checkout de productos - Create product checkout',
+    description: `
+    Crea una sesión de checkout para productos seleccionados y retorna URL de pago.
+    
+    **Formato de entrada:**
+    - \`items\`: Array de objetos con \`id\` (UUID del producto) y \`quantity\` (cantidad)
+    - Cada producto debe existir y tener stock suficiente
+    
+    **Ejemplo:**
+    \`\`\`json
+    {
+      "items": [
+        { "id": "550e8400-e29b-41d4-a716-446655440000", "quantity": 2 },
+        { "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "quantity": 1 }
+      ]
+    }
+    \`\`\`
+    `
   })
   @ApiResponse({ 
     status: 201, 
-    description: 'Checkout created successfully', 
+    description: 'Checkout creado exitosamente - Checkout created successfully', 
     type: CheckoutResponseDto 
   })
   @ApiResponse({ 
     status: 400, 
-    description: 'Bad request - validation failed'
+    description: 'Solicitud incorrecta - Validación fallida o productos no encontrados'
   })
   @ApiResponse({ 
     status: 404, 
-    description: 'One or more products not found'
+    description: 'Uno o más productos no encontrados - One or more products not found'
   })
   async createCheckout(
     @Body() createCheckoutDto: CreateCheckoutDto
@@ -34,21 +50,50 @@ export class ProductCheckoutController {
 
   @Post('with-card')
   @ApiOperation({ 
-    summary: 'Create checkout and process payment with card',
-    description: 'Creates a checkout session and immediately processes payment with provided card data using direct transaction'
+    summary: 'Crear checkout y procesar pago con tarjeta - Create checkout and process payment with card',
+    description: `
+    Crea una sesión de checkout y procesa el pago inmediatamente con los datos de tarjeta proporcionados usando transacción directa.
+    
+    **Formato de entrada:**
+    - \`items\`: Array de productos con cantidades (igual que el endpoint básico)
+    - \`customer_email\`: Email del cliente (requerido)
+    - \`card_data\`: Datos de la tarjeta de crédito/débito
+    
+    **Ejemplo:**
+    \`\`\`json
+    {
+      "items": [
+        { "id": "550e8400-e29b-41d4-a716-446655440000", "quantity": 2 }
+      ],
+      "customer_email": "cliente@ejemplo.com",
+      "card_data": {
+        "number": "4242424242424242",
+        "exp_month": "12",
+        "exp_year": "29",
+        "cvc": "123",
+        "card_holder": "Juan Pérez"
+      }
+    }
+    \`\`\`
+    
+    **Notas importantes:**
+    - El año de expiración debe estar en formato de 2 dígitos (29 para 2029)
+    - El número de tarjeta 4242424242424242 es para testing en sandbox
+    - El resultado incluye el estado de la transacción inmediatamente
+    `
   })
   @ApiResponse({ 
     status: 201, 
-    description: 'Checkout and payment processed successfully', 
+    description: 'Checkout y pago procesados exitosamente - Checkout and payment processed successfully', 
     type: CheckoutResponseDto 
   })
   @ApiResponse({ 
     status: 400, 
-    description: 'Bad request - validation failed or payment processing failed'
+    description: 'Solicitud incorrecta - Validación fallida, procesamiento de pago fallido o productos no encontrados'
   })
   @ApiResponse({ 
     status: 404, 
-    description: 'One or more products not found'
+    description: 'Uno o más productos no encontrados - One or more products not found'
   })
   async createCheckoutWithCard(
     @Body() createCheckoutDto: CreateCheckoutWithCardDto
