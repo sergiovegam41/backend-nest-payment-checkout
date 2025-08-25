@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { ProductCheckoutService } from './services/product-checkout.service';
 import { CreateCheckoutWithCardDto, CheckoutResponseDto, CheckoutSimpleStatusDto, WompiWebhookDto } from './dto';
 
-@ApiTags('product-checkout')
+@ApiTags('product-payment')
 @Controller('product-checkout')
 export class ProductCheckoutController {
   constructor(private readonly productCheckoutService: ProductCheckoutService) {}
@@ -32,7 +32,6 @@ export class ProductCheckoutController {
     return await this.productCheckoutService.createCheckout(createCheckoutDto);
   }
 
-  // ENDPOINT ELIMINADO: Ahora solo usamos POST / para pagos con tarjeta
 
   @Get(':checkout_id/status')
   @ApiOperation({ 
@@ -64,22 +63,5 @@ export class ProductCheckoutController {
     return await this.productCheckoutService.getCheckoutStatus(checkoutId);
   }
 
-  @Post('webhook/wompi')
-  @ApiOperation({ 
-    summary: 'Wompi webhook handler',
-    description: 'Receives payment status updates from Wompi'
-  })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Webhook processed successfully'
-  })
-  @ApiResponse({ 
-    status: 400, 
-    description: 'Webhook processing failed'
-  })
-  async handleWompiWebhook(
-    @Body() webhook: WompiWebhookDto
-  ): Promise<{ success: boolean; message: string }> {
-    return await this.productCheckoutService.handleWompiWebhook(webhook);
-  }
+ 
 }
