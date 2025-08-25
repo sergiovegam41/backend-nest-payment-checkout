@@ -1,7 +1,9 @@
 export interface PrismaModel {
   id: string;
-  createdAt: Date;
+  createdAt?: Date;
+  created_at?: Date;
   updatedAt?: Date;
+  updated_at?: Date;
 }
 
 export type PrismaDelegate = {

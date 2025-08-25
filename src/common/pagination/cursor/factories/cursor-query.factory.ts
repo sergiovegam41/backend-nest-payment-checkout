@@ -90,11 +90,32 @@ export class CursorQueryFactory {
   ): Record<string, any> {
     const cursorData: Record<string, any> = { id: item.id };
     
-    if (this.hasValidFieldValue(item, primaryOrderField)) {
-      cursorData[primaryOrderField] = item[primaryOrderField];
+    // Handle both createdAt and created_at field names
+    const actualFieldName = this.resolveFieldName(item, primaryOrderField);
+    
+    if (actualFieldName && this.hasValidFieldValue(item, actualFieldName)) {
+      cursorData[primaryOrderField] = item[actualFieldName];
     }
     
     return cursorData;
+  }
+
+  private resolveFieldName<T extends PrismaModel>(item: T, fieldName: string): string | null {
+    // Check if the exact field exists
+    if (this.hasValidFieldValue(item, fieldName)) {
+      return fieldName;
+    }
+    
+    // Handle createdAt <-> created_at mapping
+    if (fieldName === 'createdAt' && this.hasValidFieldValue(item, 'created_at')) {
+      return 'created_at';
+    }
+    
+    if (fieldName === 'created_at' && this.hasValidFieldValue(item, 'createdAt')) {
+      return 'createdAt';
+    }
+    
+    return null;
   }
 
   private hasValidFieldValue<T extends PrismaModel>(

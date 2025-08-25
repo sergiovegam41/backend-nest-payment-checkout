@@ -1,0 +1,160 @@
+<?php
+namespace App\Controllers\Api\Payment\Providers\Integrations\Wompi;
+use App\Controllers\Api\Payment\Contracts\AbstractPaymentContract;
+use App\Controllers\Api\Payment\Dtos\PaymentDTO;
+use App\Controllers\Api\Payment\Dtos\PaymentStatesDTO;
+use App\Controllers\Api\Payment\Dtos\ResponseCheckDTO;
+use App\Controllers\Api\Payment\Dtos\ResponsePymentLinkDTO;
+use App\Controllers\Api\Payment\Providers\Integrations\Wompi\DTOs\WompiStates;
+use App\Controllers\Utils\IntegracionesGenerales\IntegracionesConfig;
+use Core\providers\Request;
+
+class WompiProvider extends AbstractPaymentContract 
+{
+    public const INTEGRATION_NAME = "Wompi";
+    protected $END_POINT_PROD = "https://production.wompi.co/v1";
+    protected $END_POINT_TEST = "https://sandbox.wompi.co/v1";
+    protected $LINKS = [ 
+
+        PaymentStatesDTO::PENDIENTE => [ WompiStates::PENDING ],
+        PaymentStatesDTO::APROBADO => [ WompiStates::APPROVED ],
+        PaymentStatesDTO::NO_APROBADO => [  WompiStates::VOIDED, WompiStates::REFUNDED, WompiStates::CANCELLED , WompiStates::DECLINED ],
+        PaymentStatesDTO::ERROR => [ WompiStates::ERROR ]
+
+    ];
+
+    public function create_link( PaymentDTO $PaymentDTO ): ResponsePymentLinkDTO {
+        
+        $credentials = $this->getWompiCredentials();
+        $privateKey = $credentials->private_key;
+
+        $paymentData = [
+            
+            "name" => "Pago de tu compra en nuestra tienda", // Nombre del link de pago
+            "description" => "Pago de productos en nuestra tienda online", // Descripción del pago
+            "single_use" => true, // para que el link solo admita un solo pago
+            "collect_shipping" => false, // para pedir informacion de envio
+            "currency" => "COP",  // Únicamente está disponible pesos colombianos (COP) 
+            "amount_in_cents" =>  $PaymentDTO->amount_subunit // Precio en Centésimo
+
+        ];
+
+        $response = $this->sendRequestToWompi($privateKey, $paymentData);
+
+        if( $response["http_code"] == 201 ){
+            
+            $id = $response["response"]->data->id;
+            $resp = new ResponsePymentLinkDTO(success: true,  payment_id_integration: $id, full_link: "https://checkout.wompi.co/l/$id");
+            return $resp;
+
+        }else{
+
+            return new ResponsePymentLinkDTO(false);
+            
+        }
+    }
+
+    public function check( Request $PymentRequestDTO): ResponseCheckDTO {
+
+        $payment_id_integration = $PymentRequestDTO->request["request"]["data"]["transaction"]["payment_link_id"];
+        $credentials = $this->getWompiCredentials();
+        $privateKey = $credentials->private_key;
+        
+        // p($payment_id_integration);
+        plog($PymentRequestDTO);
+        $payment_id_integration = $PymentRequestDTO->request["request"]["data"]["transaction"]["payment_link_id"];
+        $paymentId = $PymentRequestDTO->request["request"]["data"]["transaction"]["id"];
+
+        $response = $this->sendCheckRequestToWompi($privateKey, $paymentId);
+
+        // p($response);
+        if($response["http_code"] == 200){
+
+            $state = $response["response"]->data->status;
+            return new ResponseCheckDTO(true, $state, $payment_id_integration, json_encode( $response["response"]));
+       
+        } else {
+        
+            return new ResponseCheckDTO(false, 'ERROR', null, "");
+        
+        }
+
+    }
+
+    private function sendRequestToWompi(string $privateKey, array $paymentData) {
+        
+        $curl = curl_init();
+        
+        curl_setopt_array($curl, array(
+
+          CURLOPT_URL => $this->getEndPointIntegration().'/payment_links',
+          CURLOPT_RETURNTRANSFER => true,
+          CURLOPT_ENCODING => '',
+          CURLOPT_MAXREDIRS => 10,
+          CURLOPT_TIMEOUT => 0,
+          CURLOPT_FOLLOWLOCATION => true,
+          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+          CURLOPT_CUSTOMREQUEST => 'POST',
+          CURLOPT_POSTFIELDS =>json_encode($paymentData),
+          CURLOPT_HTTPHEADER => array(
+            'Content-Type: application/json',
+            'Authorization: Bearer '.$privateKey
+          ),
+
+        ));
+            
+        $response = curl_exec($curl);
+
+        // p($response);
+        // Obtener el código de estado HTTP
+        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+        curl_close($curl);
+
+        return array(
+            'response' => json_decode($response),
+            'http_code' => $http_code
+        );
+        
+    }
+
+    private function sendCheckRequestToWompi(string $privateKey, string $paymentId) {
+        $curl = curl_init();
+        
+        curl_setopt_array($curl, array(
+          CURLOPT_URL => $this->getEndPointIntegration().'/transactions/'.$paymentId,
+          CURLOPT_RETURNTRANSFER => true,
+          CURLOPT_ENCODING => '',
+          CURLOPT_MAXREDIRS => 10,
+          CURLOPT_TIMEOUT => 0,
+          CURLOPT_FOLLOWLOCATION => true,
+          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+          CURLOPT_CUSTOMREQUEST => 'GET',
+          CURLOPT_HTTPHEADER => array(
+            'Content-Type: application/json',
+            'Authorization: Bearer '.$privateKey
+          ),
+        ));
+            
+        $response = curl_exec($curl);
+        // Obtener el código de estado HTTP
+        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+        curl_close($curl);
+
+        return array(
+            'response' => json_decode($response),
+            'http_code' => $http_code
+        );
+    }
+
+
+
+    function getWompiCredentials(){
+        $data = (new IntegracionesConfig())->getOrCreateIntegracionesConfig(65, self::INTEGRATION_NAME);
+        return $data;       
+    }
+
+
+ 
+}

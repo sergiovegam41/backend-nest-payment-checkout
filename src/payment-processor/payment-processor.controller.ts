@@ -1,34 +1,39 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PaymentProcessorService } from './payment-processor.service';
-import { CreatePaymentProcessorDto } from './dto/create-payment-processor.dto';
-import { UpdatePaymentProcessorDto } from './dto/update-payment-processor.dto';
+import { PaymentRequestDto, PaymentLinkResponseDto, PaymentStatusResponseDto } from './dto';
 
-@Controller('payment-processor')
+@ApiTags('payments')
+@Controller('payments')
 export class PaymentProcessorController {
   constructor(private readonly paymentProcessorService: PaymentProcessorService) {}
 
-  @Post()
-  create(@Body() createPaymentProcessorDto: CreatePaymentProcessorDto) {
-    return this.paymentProcessorService.create(createPaymentProcessorDto);
+  @Post('create-link')
+  @ApiOperation({ summary: 'Create payment link' })
+  @ApiResponse({ status: 201, description: 'Payment link created successfully', type: PaymentLinkResponseDto })
+  async createPaymentLink(
+    @Body() paymentRequest: PaymentRequestDto
+  ) {
+    return await this.paymentProcessorService.createPaymentLink(paymentRequest);
   }
 
-  @Get()
-  findAll() {
-    return this.paymentProcessorService.findAll();
+  @Get('status/:paymentId')
+  @ApiOperation({ summary: 'Check payment status' })
+  @ApiResponse({ status: 200, description: 'Payment status retrieved successfully', type: PaymentStatusResponseDto })
+  async checkPaymentStatus(
+    @Param('paymentId') paymentId: string,
+    @Query('provider') provider?: string
+  ): Promise<PaymentStatusResponseDto> {
+    return await this.paymentProcessorService.checkPaymentStatus(paymentId, provider);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.paymentProcessorService.findOne(+id);
-  }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePaymentProcessorDto: UpdatePaymentProcessorDto) {
-    return this.paymentProcessorService.update(+id, updatePaymentProcessorDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.paymentProcessorService.remove(+id);
+  @Get('providers')
+  @ApiOperation({ summary: 'Get available payment providers' })
+  @ApiResponse({ status: 200, description: 'List of available payment providers' })
+  getProviders(): { providers: string[] } {
+    return {
+      providers: this.paymentProcessorService.getAvailableProviders()
+    };
   }
 }

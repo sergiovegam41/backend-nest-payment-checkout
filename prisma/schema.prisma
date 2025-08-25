@@ -27,6 +27,7 @@ model Product {
 
   // Relations
   images      ProductImage[]
+  checkoutItems CheckoutItem[]
 
   @@map("products")
 }
@@ -47,4 +48,81 @@ model ProductImage {
   @@map("product_images")
   @@index([productId])
   @@index([productId, position])
+}
+
+// Payment Management
+model Payment {
+  id                  String   @id @default(uuid()) @db.Uuid
+  amount_in_cents     Int
+  currency            String   @default("COP")
+  status              String   @default("PENDING")
+  provider            String   @default("wompi")
+  provider_payment_id String?  @unique
+  payment_url         String?
+  name                String?
+  description         String?
+  single_use          Boolean  @default(true)
+  collect_shipping    Boolean  @default(false)
+  raw_response        String?  @db.Text
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  @@map("payments")
+  @@index([provider_payment_id])
+  @@index([status])
+  @@index([created_at])
+}
+
+// Product Checkout Management
+model Checkout {
+  id                String        @id @default(uuid()) @db.Uuid
+  total             Int           // Total amount in cents
+  subtotal          Int           // Subtotal in cents
+  taxes             Int           // Tax amount in cents
+  currency          String        @default("COP")
+  status            CheckoutStatus @default(PENDING)
+  paymentUrl        String?       // Payment URL from provider
+  providerPaymentId String?       // Payment ID from provider (Wompi)
+  
+  // Customer info (optional)
+  customerEmail     String?
+  customerName      String?
+  
+  // Timestamps
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  paidAt            DateTime?
+  
+  // Relations
+  items             CheckoutItem[]
+  
+  @@map("checkouts")
+  @@index([status])
+  @@index([providerPaymentId])
+  @@index([createdAt])
+}
+
+model CheckoutItem {
+  id         String  @id @default(uuid()) @db.Uuid
+  checkoutId String  @db.Uuid
+  productId  String  @db.Uuid
+  quantity   Int
+  unitPrice  Int     // Price at time of purchase in cents
+  totalPrice Int     // unitPrice * quantity
+  
+  // Relations
+  checkout   Checkout @relation(fields: [checkoutId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id])
+  
+  @@map("checkout_items")
+  @@index([checkoutId])
+  @@index([productId])
+}
+
+enum CheckoutStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+  CANCELLED
 }

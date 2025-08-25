@@ -10,6 +10,7 @@ import { DatabaseHealthStrategy } from './health/strategies/database-health.stra
 import configuration from './config/configuration';
 import { configValidationSchema } from './config/validation.schema';
 import { PaymentProcessorModule } from './payment-processor/payment-processor.module';
+import { ProductCheckoutModule } from './product-checkout/product-checkout.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { PaymentProcessorModule } from './payment-processor/payment-processor.mo
     PrismaModule,
     ProductModule,
     PaymentProcessorModule,
+    ProductCheckoutModule,
   ],
   controllers: [HealthController],
   providers: [
