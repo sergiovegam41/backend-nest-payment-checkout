@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { IPaymentProvider, IPaymentConfig, IPaymentCredentials } from '../interfaces/payment-provider.interface';
 import { PaymentRequestDto, PaymentLinkResponseDto, PaymentStatusResponseDto } from '../dto';
 import { PaymentStatus } from '../enums/payment-status.enum';
+import { CardTokenRequest, CardTokenResponse, TransactionRequest, TransactionResponse, MerchantInfoResponse } from '../interfaces';
 
 @Injectable()
 export abstract class BasePaymentProvider implements IPaymentProvider {
@@ -17,13 +18,19 @@ export abstract class BasePaymentProvider implements IPaymentProvider {
   
   abstract checkPaymentStatus(paymentId: string): Promise<PaymentStatusResponseDto>;
   
+  // New transaction methods
+  abstract tokenizeCard(cardData: CardTokenRequest): Promise<{ success: boolean; data?: CardTokenResponse; error_message?: string }>;
+  abstract getMerchantInfo(): Promise<{ success: boolean; data?: MerchantInfoResponse; error_message?: string }>;
+  abstract createTransaction(transactionData: TransactionRequest): Promise<{ success: boolean; data?: TransactionResponse; error_message?: string }>;
+  abstract generateSignature(reference: string, amountInCents: number, currency: string): Promise<string>;
+  
   protected abstract mapProviderStatusToGeneric(providerStatus: string): PaymentStatus;
   
   protected async getCredentials(): Promise<IPaymentCredentials> {
     return await this.config.getCredentials();
   }
   
-  protected getEndpoint(environment: 'sandbox' | 'production'): string {
+  protected getEndpoint(environment: 'sandbox' | 'uat'): string {
     return this.config.getEndpoint(environment);
   }
   

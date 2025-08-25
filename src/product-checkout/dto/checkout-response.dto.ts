@@ -32,6 +32,33 @@ export class CheckoutItemDto {
   total_price: number;
 }
 
+export class PaymentMethodInfoDto {
+  @ApiProperty({
+    description: 'Payment method type',
+    example: 'CARD'
+  })
+  type: string;
+
+  @ApiProperty({
+    description: 'Last four digits of card',
+    example: '4242'
+  })
+  last_four: string;
+
+  @ApiProperty({
+    description: 'Card holder name',
+    example: 'Test User'
+  })
+  card_holder: string;
+
+  @ApiProperty({
+    description: 'Card brand',
+    example: 'VISA',
+    required: false
+  })
+  brand?: string;
+}
+
 export class CheckoutResponseDto {
   @ApiProperty({
     description: 'Checkout UUID for tracking',
@@ -46,32 +73,56 @@ export class CheckoutResponseDto {
   items: CheckoutItemDto[];
 
   @ApiProperty({
-    description: 'Subtotal in cents (before taxes)',
-    example: 259800
+    description: 'Subtotal in pesos (before taxes)',
+    example: 2598
   })
   subtotal: number;
 
   @ApiProperty({
-    description: 'Tax amount in cents',
-    example: 49362
+    description: 'Tax amount in pesos',
+    example: 494
   })
   taxes: number;
 
   @ApiProperty({
-    description: 'Total amount in cents (subtotal + taxes)',
-    example: 309162
+    description: 'Total amount in pesos (subtotal + taxes)',
+    example: 3092
   })
   total: number;
-
-  @ApiProperty({
-    description: 'Payment URL from payment processor',
-    example: 'https://checkout.wompi.co/abc123'
-  })
-  payment_url: string;
 
   @ApiProperty({
     description: 'Currency code',
     example: 'COP'
   })
   currency: string;
+
+  @ApiProperty({
+    description: 'Transaction ID from payment processor',
+    example: 'wompi-trans-123',
+    required: false
+  })
+  transaction_id?: string;
+
+  @ApiProperty({
+    description: 'Transaction status',
+    example: 'APPROVED',
+    enum: ['APPROVED', 'DECLINED', 'PENDING', 'ERROR'],
+    required: false
+  })
+  transaction_status?: string;
+
+  @ApiProperty({
+    description: 'Payment method information',
+    type: PaymentMethodInfoDto,
+    required: false
+  })
+  payment_method_info?: PaymentMethodInfoDto;
+
+  // Deprecated - kept for backward compatibility
+  @ApiProperty({
+    description: 'Payment URL (deprecated - use transaction fields instead)',
+    example: 'https://checkout.wompi.co/abc123',
+    required: false
+  })
+  payment_url?: string;
 }

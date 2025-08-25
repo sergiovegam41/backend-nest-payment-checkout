@@ -5,6 +5,7 @@ import { PaymentProcessorController } from './payment-processor.controller';
 import { PaymentProviderFactory } from './factories/payment-provider.factory';
 import { WompiProviderService } from './providers/wompi/wompi-provider.service';
 import { WompiConfigService } from './providers/wompi/wompi-config.service';
+import { SignatureService } from './services/signature.service';
 
 @Module({
   imports: [ConfigModule],
@@ -14,6 +15,7 @@ import { WompiConfigService } from './providers/wompi/wompi-config.service';
     PaymentProviderFactory,
     WompiProviderService,
     WompiConfigService,
+    SignatureService,
   ],
   exports: [PaymentProcessorService],
 })

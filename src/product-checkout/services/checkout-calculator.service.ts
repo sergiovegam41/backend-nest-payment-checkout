@@ -23,14 +23,16 @@ export class CheckoutCalculatorService implements ICheckoutCalculator {
       }
     });
 
-    let subtotal = 0;
+    let subtotalInCents = 0;
     
     products.forEach((product, index) => {
       const quantity = quantities?.[index] || 1;
-      subtotal += product.price.toNumber() * quantity;
+      // Convert price from pesos to cents (multiply by 100) and round
+      const priceInCents = Math.round(product.price.toNumber() * 100);
+      subtotalInCents += priceInCents * quantity;
     });
 
-    return subtotal;
+    return subtotalInCents; // Return in cents
   }
 
   async calculateTaxes(subtotal: number): Promise<number> {

@@ -13,7 +13,18 @@ export interface DatabaseConfig {
   url: string;
 }
 
+export interface WompiConfig {
+  uatUrl: string;
+  sandboxUrl: string;
+  publicKey: string;
+  privateKey: string;
+  eventsKey: string;
+  integrityKey: string;
+  environment: 'sandbox' | 'uat';
+}
+
 export interface Configuration {
   app: AppConfig;
   database: DatabaseConfig;
+  wompi: WompiConfig;
 }

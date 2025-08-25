@@ -60,4 +60,50 @@ export const configValidationSchema = Joi.object({
       'string.uri': 'DATABASE_URL must be a valid PostgreSQL connection string',
       'any.required': 'DATABASE_URL is required',
     }),
+
+  // Wompi Configuration
+  WOMPI_UAT_URL: Joi.string()
+    .uri()
+    .default('https://api.co.uat.wompi.dev/v1')
+    .messages({
+      'string.uri': 'WOMPI_UAT_URL must be a valid URL',
+    }),
+
+  WOMPI_SANDBOX_URL: Joi.string()
+    .uri()
+    .default('https://api-sandbox.co.uat.wompi.dev/v1')
+    .messages({
+      'string.uri': 'WOMPI_SANDBOX_URL must be a valid URL',
+    }),
+
+  WOMPI_PUBLIC_KEY: Joi.string()
+    .required()
+    .messages({
+      'any.required': 'WOMPI_PUBLIC_KEY is required',
+    }),
+
+  WOMPI_PRIVATE_KEY: Joi.string()
+    .required()
+    .messages({
+      'any.required': 'WOMPI_PRIVATE_KEY is required',
+    }),
+
+  WOMPI_EVENTS_KEY: Joi.string()
+    .required()
+    .messages({
+      'any.required': 'WOMPI_EVENTS_KEY is required',
+    }),
+
+  WOMPI_INTEGRITY_KEY: Joi.string()
+    .required()
+    .messages({
+      'any.required': 'WOMPI_INTEGRITY_KEY is required',
+    }),
+
+  WOMPI_ENVIRONMENT: Joi.string()
+    .valid('sandbox', 'uat')
+    .default('sandbox')
+    .messages({
+      'any.only': 'WOMPI_ENVIRONMENT must be either "sandbox" or "uat"',
+    }),
 });

@@ -13,9 +13,17 @@ export class PaymentProcessorService {
     paymentRequest: PaymentRequestDto
   ): Promise<PaymentLinkResponseDto> {
     try {
+      console.log('💳 PaymentProcessor - Creating payment link with request:', paymentRequest);
+      
       const provider = this.getDefaultProvider();
-      return await provider.createPaymentLink(paymentRequest);
+      console.log('🏭 PaymentProcessor - Using provider:', provider.name);
+      
+      const result = await provider.createPaymentLink(paymentRequest);
+      console.log('📋 PaymentProcessor - Provider response:', result);
+      
+      return result;
     } catch (error) {
+      console.error('❌ PaymentProcessor - Error creating payment link:', error);
       throw new BadRequestException(`Failed to create payment link: ${error.message}`);
     }
   }
@@ -35,6 +43,10 @@ export class PaymentProcessorService {
   
   getAvailableProviders(): string[] {
     return this.providerFactory.getAvailableProviders();
+  }
+  
+  getProvider(providerName?: string): IPaymentProvider {
+    return providerName ? this.getProviderByName(providerName) : this.getDefaultProvider();
   }
   
   private getDefaultProvider(): IPaymentProvider {

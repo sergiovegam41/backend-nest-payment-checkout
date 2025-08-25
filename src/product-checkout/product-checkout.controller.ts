@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { ProductCheckoutService } from './services/product-checkout.service';
-import { CreateCheckoutDto, CheckoutResponseDto, CheckoutStatusResponseDto, WompiWebhookDto } from './dto';
+import { CreateCheckoutDto, CreateCheckoutWithCardDto, CheckoutResponseDto, CheckoutStatusResponseDto, WompiWebhookDto } from './dto';
 
 @ApiTags('product-checkout')
 @Controller('product-checkout')
@@ -30,6 +30,30 @@ export class ProductCheckoutController {
     @Body() createCheckoutDto: CreateCheckoutDto
   ): Promise<CheckoutResponseDto> {
     return await this.productCheckoutService.createCheckout(createCheckoutDto);
+  }
+
+  @Post('with-card')
+  @ApiOperation({ 
+    summary: 'Create checkout and process payment with card',
+    description: 'Creates a checkout session and immediately processes payment with provided card data using direct transaction'
+  })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Checkout and payment processed successfully', 
+    type: CheckoutResponseDto 
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Bad request - validation failed or payment processing failed'
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'One or more products not found'
+  })
+  async createCheckoutWithCard(
+    @Body() createCheckoutDto: CreateCheckoutWithCardDto
+  ): Promise<CheckoutResponseDto> {
+    return await this.productCheckoutService.createCheckoutWithCard(createCheckoutDto);
   }
 
   @Get(':checkout_id/status')

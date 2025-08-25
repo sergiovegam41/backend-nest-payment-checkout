@@ -15,12 +15,14 @@ export class ProductFactory implements IDataFactory<ProductData> {
 
   create(overrides?: Partial<ProductData>): ProductData {
     const template = this.getRandomTemplate();
-    const randomVariation = Math.random() * 200 - 100; // ±$100 variation
+    // Smaller variation to ensure minimum Wompi requirements (1500 pesos = $1.5 USD minimum)
+    const randomVariation = Math.random() * 100 - 50; // ±$50 variation (smaller)
+    const finalPrice = Math.max(template.basePrice + randomVariation, 1.5); // Minimum $1.5 USD
     
     return {
       name: template.name,
       description: template.description,
-      price: Math.round((template.basePrice + randomVariation) * 100) / 100,
+      price: Math.round(finalPrice * 100) / 100,
       sku: this.generateSKU(template.name),
       stock: Math.floor(Math.random() * 100) + 10, // 10-110 stock
       isActive: Math.random() > 0.1, // 90% active
